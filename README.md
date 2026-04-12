@@ -31,7 +31,17 @@ Open Android Studio and complete the setup wizard. Make sure to install:
 - Android SDK Platform-Tools
 - An Android emulator (AVD)
 
-### 3. Accept Android licenses
+### 3. Install Android SDK Command-line Tools
+
+`flutter doctor --android-licenses` will fail if this component is missing. Install it first:
+
+1. Open **Android Studio**
+2. Go to **Settings** → **Languages & Frameworks** → **Android SDK**
+3. Click the **SDK Tools** tab
+4. Check **Android SDK Command-line Tools (latest)**
+5. Click **Apply** → **OK**
+
+### 4. Accept Android licenses
 
 ```bash
 flutter doctor --android-licenses
@@ -39,7 +49,7 @@ flutter doctor --android-licenses
 
 Accept all prompts with `y`.
 
-### 4. Verify your environment
+### 5. Verify your environment
 
 ```bash
 flutter doctor
@@ -47,7 +57,7 @@ flutter doctor
 
 All items should show a checkmark. Fix any issues it reports before continuing.
 
-### 5. Clone and get dependencies
+### 6. Clone and get dependencies
 
 ```bash
 git clone <repo-url>
@@ -55,7 +65,7 @@ cd cuaca
 flutter pub get
 ```
 
-### 6. Grant location permissions (Android emulator)
+### 7. Grant location permissions (Android emulator)
 
 The app requests GPS location on startup. On the emulator, location is enabled by default. On a physical device, allow the permission when prompted.
 
