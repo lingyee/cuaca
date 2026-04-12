@@ -63,7 +63,7 @@ class _PlaceSearchBarState extends ConsumerState<PlaceSearchBar> {
     _removeOverlay();
     setState(() => _suggestions = []);
     _focusNode.unfocus();
-    ref.read(selectedPlaceProvider.notifier).state = place;
+    ref.read(selectedPlaceProvider.notifier).set(place);
     final mapCtrl = ref.read(mapControllerProvider);
     try {
       mapCtrl.move(place.latLng, 15.0);

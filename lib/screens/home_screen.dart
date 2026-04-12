@@ -26,7 +26,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       if (!_initialLocationApplied && place != null) {
         _initialLocationApplied = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          ref.read(selectedPlaceProvider.notifier).state = place;
+          ref.read(selectedPlaceProvider.notifier).set(place);
         });
       }
     });

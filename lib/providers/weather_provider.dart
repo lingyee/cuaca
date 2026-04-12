@@ -7,7 +7,15 @@ import '../services/open_meteo_service.dart';
 import '../services/rainviewer_service.dart';
 
 // Selected place (null = no location chosen)
-final selectedPlaceProvider = StateProvider<Place?>((ref) => null);
+class SelectedPlaceNotifier extends Notifier<Place?> {
+  @override
+  Place? build() => null;
+
+  void set(Place? place) => state = place;
+}
+
+final selectedPlaceProvider =
+    NotifierProvider<SelectedPlaceNotifier, Place?>(SelectedPlaceNotifier.new);
 
 // GPS + reverse geocode on startup
 final initialPlaceProvider = FutureProvider<Place?>((ref) async {
