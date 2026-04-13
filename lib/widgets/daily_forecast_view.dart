@@ -156,13 +156,13 @@ class _DayCardState extends State<_DayCard> {
               ),
               if (_expanded) ...[
                 const Divider(height: 16),
-                for (final period in [
-                  ('Morning', '🌅', _periodEntry(9)),
-                  ('Afternoon', '☀️', _periodEntry(15)),
-                  ('Night', '🌙', _nightEntry()),
+                for (final (label, emoji, entry, endHour) in [
+                  ('Morning', '🌅', _periodEntry(9), 12),
+                  ('Afternoon', '☀️', _periodEntry(15), 18),
+                  ('Night', '🌙', _nightEntry(), 30), // 30 > any hour, always visible once started
                 ])
-                  if (period.$3 != null)
-                    _PeriodRow(period.$1, period.$2, period.$3!, widget.colorScheme),
+                  if (entry != null && (!isToday || DateTime.now().hour < endHour))
+                    _PeriodRow(label, emoji, entry, widget.colorScheme),
               ],
             ],
           ),

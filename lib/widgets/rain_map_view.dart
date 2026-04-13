@@ -34,7 +34,8 @@ class RainMapView extends ConsumerStatefulWidget {
   ConsumerState<RainMapView> createState() => _RainMapViewState();
 }
 
-class _RainMapViewState extends ConsumerState<RainMapView> {
+class _RainMapViewState extends ConsumerState<RainMapView>
+    with WidgetsBindingObserver {
   Timer? _timer;
   DateTime? _lastRefreshed;
   String _tileTime = _nowcastTime();
@@ -42,7 +43,19 @@ class _RainMapViewState extends ConsumerState<RainMapView> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _lastRefreshed = DateTime.now();
+    _startTimer();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _startTimer() {
     _timer = Timer.periodic(const Duration(minutes: 10), (_) {
       setState(() {
         _tileTime = _nowcastTime();
@@ -52,9 +65,17 @@ class _RainMapViewState extends ConsumerState<RainMapView> {
   }
 
   @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _timer?.cancel();
+    } else if (state == AppLifecycleState.resumed) {
+      setState(() {
+        _tileTime = _nowcastTime();
+        _lastRefreshed = DateTime.now();
+      });
+      _startTimer();
+    }
   }
 
   String get _precipTileUrl =>
@@ -94,14 +115,14 @@ class _RainMapViewState extends ConsumerState<RainMapView> {
               userAgentPackageName: 'com.cuaca',
             ),
             // Tomorrow.io precipitation overlay
-            // maxNativeZoom=6: rain tiles are fetched at zoom 6 and upscaled,
-            // keeping requests to ~4-6 tiles regardless of how far the user zooms in.
+            // maxNativeZoom=5: rain tiles fetched at zoom 5 (~4 tiles cover
+            // all of Malaysia), upscaled when zoomed in. Keeps API usage low.
             Opacity(
               opacity: 0.7,
               child: TileLayer(
                 urlTemplate: _precipTileUrl,
                 userAgentPackageName: 'com.cuaca',
-                maxNativeZoom: 6,
+                maxNativeZoom: 5,
               ),
             ),
             // Marker for selected place
