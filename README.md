@@ -6,7 +6,7 @@ A Flutter weather app for Malaysia that shows forecasts and live rain radar.
 - Search any place in Malaysia via Photon (typo-tolerant, covers roads, neighbourhoods & POIs)
 - 7-day daily forecast with expandable cards
 - 48-hour hourly forecast
-- Live rain radar map powered by RainViewer
+- Live rain map powered by Tomorrow.io (satellite + model data)
 - Auto-detects current location on startup via GPS
 
 ---
@@ -65,7 +65,22 @@ cd cuaca
 flutter pub get
 ```
 
-### 7. Grant location permissions (Android emulator)
+### 7. Set up the Tomorrow.io API key
+
+The rain map requires a free Tomorrow.io API key.
+
+1. Sign up at [app.tomorrow.io](https://app.tomorrow.io) (free)
+2. Go to **Development → API Keys** and copy your key
+3. Create the file `lib/config.dart` with your key:
+
+```dart
+const String tomorrowIoApiKey = 'YOUR_API_KEY_HERE';
+```
+
+> `lib/config.dart` is listed in `.gitignore` and will not be committed.
+> Without this file the app will not compile.
+
+### 8. Grant location permissions (Android emulator)
 
 The app requests GPS location on startup. On the emulator, location is enabled by default. On a physical device, allow the permission when prompted.
 
@@ -228,8 +243,11 @@ Run with `-v` for verbose output to diagnose specific issues.
 | [intl](https://pub.dev/packages/intl) | Date formatting |
 | [latlong2](https://pub.dev/packages/latlong2) | Lat/lng coordinates |
 
-**APIs used (all free, no key required):**
-- [Open-Meteo](https://open-meteo.com) — weather forecast
-- [Photon](https://photon.komoot.io) — place search & reverse geocoding (powered by OpenStreetMap)
-- [RainViewer](https://www.rainviewer.com/api.html) — radar tiles
-- [OpenStreetMap](https://www.openstreetmap.org) — base map tiles
+**APIs used:**
+
+| API | Purpose | Key required |
+|-----|---------|-------------|
+| [Open-Meteo](https://open-meteo.com) | Weather forecast | No |
+| [Photon](https://photon.komoot.io) | Place search & reverse geocoding | No |
+| [Tomorrow.io](https://tomorrow.io) | Live rain map tiles (satellite + model) | Yes (free tier) |
+| [OpenStreetMap](https://www.openstreetmap.org) | Base map tiles | No |
