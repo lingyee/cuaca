@@ -3,7 +3,7 @@
 A Flutter weather app for Malaysia that shows forecasts and live rain radar.
 
 **Features:**
-- Search any place in Malaysia via OpenStreetMap Nominatim
+- Search any place in Malaysia via Photon (typo-tolerant, covers roads, neighbourhoods & POIs)
 - 7-day daily forecast with expandable cards
 - 48-hour hourly forecast
 - Live rain radar map powered by RainViewer
@@ -183,6 +183,6 @@ Run with `-v` for verbose output to diagnose specific issues.
 
 **APIs used (all free, no key required):**
 - [Open-Meteo](https://open-meteo.com) — weather forecast
-- [Nominatim](https://nominatim.openstreetmap.org) — place search & reverse geocoding
+- [Photon](https://photon.komoot.io) — place search & reverse geocoding (powered by OpenStreetMap)
 - [RainViewer](https://www.rainviewer.com/api.html) — radar tiles
 - [OpenStreetMap](https://www.openstreetmap.org) — base map tiles
