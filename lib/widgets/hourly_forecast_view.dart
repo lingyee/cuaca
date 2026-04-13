@@ -29,7 +29,11 @@ class HourlyForecastView extends StatelessWidget {
             itemCount: hours.take(12).length,
             itemBuilder: (_, i) {
               final h = hours[i];
-              final isNow = i == 0;
+              final now = DateTime.now();
+              final isNow = h.time.year == now.year &&
+                  h.time.month == now.month &&
+                  h.time.day == now.day &&
+                  h.time.hour == now.hour;
               final contentColor = isNow
                   ? colorScheme.onPrimaryContainer
                   : colorScheme.onSurfaceVariant;

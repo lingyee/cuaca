@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/weather_provider.dart';
@@ -17,6 +18,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _tabIndex = 0;
   bool _showHourly = false;
   bool _initialLocationApplied = false;
+  Timer? _forecastTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _forecastTimer = Timer.periodic(const Duration(minutes: 30), (_) {
+      final place = ref.read(selectedPlaceProvider);
+      if (place != null) ref.invalidate(forecastProvider(place));
+    });
+  }
+
+  @override
+  void dispose() {
+    _forecastTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

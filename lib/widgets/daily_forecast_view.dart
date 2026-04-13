@@ -162,14 +162,7 @@ class _DayCardState extends State<_DayCard> {
                   ('Night', '🌙', _nightEntry()),
                 ])
                   if (period.$3 != null)
-                    _PeriodRow(
-                      period.$1,
-                      period.$2,
-                      '${weatherEmoji(period.$3!.weatherCode)}  '
-                      '${weatherDescription(period.$3!.weatherCode)}  '
-                      '${period.$3!.temperature.round()}°C',
-                      widget.colorScheme,
-                    ),
+                    _PeriodRow(period.$1, period.$2, period.$3!, widget.colorScheme),
               ],
             ],
           ),
@@ -201,11 +194,11 @@ class _Chip extends StatelessWidget {
 
 class _PeriodRow extends StatelessWidget {
   final String label;
-  final String emoji;
-  final String text;
+  final String periodEmoji;
+  final HourlyForecast entry;
   final ColorScheme colorScheme;
 
-  const _PeriodRow(this.label, this.emoji, this.text, this.colorScheme);
+  const _PeriodRow(this.label, this.periodEmoji, this.entry, this.colorScheme);
 
   @override
   Widget build(BuildContext context) {
@@ -213,15 +206,26 @@ class _PeriodRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 16)),
-          const SizedBox(width: 8),
-          Text('$label: ',
-              style: const TextStyle(fontWeight: FontWeight.w500)),
+          SizedBox(
+              width: 24,
+              child: Text(periodEmoji,
+                  style: const TextStyle(fontSize: 16))),
+          SizedBox(
+              width: 76,
+              child: Text(label,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w500, fontSize: 13))),
+          SizedBox(
+              width: 28,
+              child: Text(weatherEmoji(entry.weatherCode),
+                  style: const TextStyle(fontSize: 16))),
           Expanded(
-            child: Text(text,
-                style: TextStyle(
-                    color: colorScheme.onSurfaceVariant, fontSize: 13)),
-          ),
+              child: Text(weatherDescription(entry.weatherCode),
+                  style: TextStyle(
+                      color: colorScheme.onSurfaceVariant, fontSize: 13))),
+          Text('${entry.temperature.round()}°C',
+              style:
+                  TextStyle(fontSize: 13, color: colorScheme.onSurfaceVariant)),
         ],
       ),
     );
