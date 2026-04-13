@@ -89,10 +89,21 @@ flutter devices
 
 ### Run on Android emulator
 
-Start the emulator from Android Studio (Device Manager), then:
+Start the emulator from Android Studio (Device Manager), then find its device ID:
 
 ```bash
-flutter run -d emulator-5554
+flutter devices
+```
+
+Look for a line like:
+```
+sdk gphone16k x86 64 (mobile) • emulator-5554 • android-x64 • Android 17 (API 37) (emulator)
+```
+
+The value after `•` (e.g. `emulator-5554`) is your device ID. Use it to run:
+
+```bash
+flutter run -d emulator-5554   # replace with your actual device ID
 ```
 
 > First run downloads Gradle (~200 MB) and compiles the app. This can take 5–15 minutes depending on your connection. Subsequent runs are much faster.
