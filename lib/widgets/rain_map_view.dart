@@ -7,24 +7,24 @@ import 'package:latlong2/latlong.dart';
 import '../config.dart';
 import '../models/place.dart';
 import '../providers/weather_provider.dart';
+import '../services/rain_tile_service.dart';
 
 // Malaysia bounding center
 const _malaysiaCentre = LatLng(4.0, 109.5);
-const _malaysiaZoom = 5.0;
+const _malaysiaZoom = 6.0;
 const _placeZoom = 11.0;
 
-/// Returns the current UTC time rounded down to the nearest 5 minutes,
-/// formatted as an ISO 8601 string for the Tomorrow.io tile URL.
-String _nowcastTime() {
-  final now = DateTime.now().toUtc();
-  final rounded = DateTime.utc(
-    now.year,
-    now.month,
-    now.day,
-    now.hour,
-    now.minute - (now.minute % 5),
-  );
-  return '${rounded.toIso8601String().split('.').first}Z';
+class _PrefetchedTileProvider extends TileProvider {
+  @override
+  ImageProvider getImage(TileCoordinates coordinates, TileLayer tileLayer) {
+    final url = tileLayer.urlTemplate!
+        .replaceAll('{z}', coordinates.z.toString())
+        .replaceAll('{x}', coordinates.x.toString())
+        .replaceAll('{y}', coordinates.y.toString());
+    final cached = getCachedTile(url);
+    if (cached != null) return MemoryImage(cached);
+    return NetworkImage(url, headers: headers);
+  }
 }
 
 class RainMapView extends ConsumerStatefulWidget {
@@ -38,7 +38,7 @@ class _RainMapViewState extends ConsumerState<RainMapView>
     with WidgetsBindingObserver {
   Timer? _timer;
   DateTime? _lastRefreshed;
-  String _tileTime = _nowcastTime();
+  String _tileTime = nowcastTime();
 
   @override
   void initState() {
@@ -56,11 +56,15 @@ class _RainMapViewState extends ConsumerState<RainMapView>
   }
 
   void _startTimer() {
-    _timer = Timer.periodic(const Duration(minutes: 10), (_) {
-      setState(() {
-        _tileTime = _nowcastTime();
-        _lastRefreshed = DateTime.now();
-      });
+    _timer = Timer.periodic(const Duration(minutes: 10), (_) async {
+      final t = nowcastTime();
+      await prefetchMalaysiaTiles(t);
+      if (mounted) {
+        setState(() {
+          _tileTime = t;
+          _lastRefreshed = DateTime.now();
+        });
+      }
     });
   }
 
@@ -70,8 +74,10 @@ class _RainMapViewState extends ConsumerState<RainMapView>
         state == AppLifecycleState.inactive) {
       _timer?.cancel();
     } else if (state == AppLifecycleState.resumed) {
+      final t = nowcastTime();
+      prefetchMalaysiaTiles(t);
       setState(() {
-        _tileTime = _nowcastTime();
+        _tileTime = t;
         _lastRefreshed = DateTime.now();
       });
       _startTimer();
@@ -104,6 +110,7 @@ class _RainMapViewState extends ConsumerState<RainMapView>
           options: MapOptions(
             initialCenter: initialCenter,
             initialZoom: initialZoom,
+            minZoom: 4.0,
             interactionOptions: const InteractionOptions(
               flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
             ),
@@ -115,14 +122,16 @@ class _RainMapViewState extends ConsumerState<RainMapView>
               userAgentPackageName: 'com.cuaca',
             ),
             // Tomorrow.io precipitation overlay
-            // maxNativeZoom=5: rain tiles fetched at zoom 5 (~4 tiles cover
-            // all of Malaysia), upscaled when zoomed in. Keeps API usage low.
+            // maxNativeZoom=4: rain tiles fetched at zoom 4 (2 tiles cover all
+            // of Malaysia), upscaled when zoomed in. Keeps API usage minimal.
             Opacity(
               opacity: 0.7,
               child: TileLayer(
                 urlTemplate: _precipTileUrl,
                 userAgentPackageName: 'com.cuaca',
-                maxNativeZoom: 5,
+                maxNativeZoom: 4,
+                panBuffer: 0,
+                tileProvider: _PrefetchedTileProvider(),
               ),
             ),
             // Marker for selected place
@@ -170,10 +179,14 @@ class _RainMapViewState extends ConsumerState<RainMapView>
           right: 0,
           child: Center(
             child: GestureDetector(
-              onTap: () => setState(() {
-                _tileTime = _nowcastTime();
-                _lastRefreshed = DateTime.now();
-              }),
+              onTap: () {
+                final t = nowcastTime();
+                prefetchMalaysiaTiles(t);
+                setState(() {
+                  _tileTime = t;
+                  _lastRefreshed = DateTime.now();
+                });
+              },
               child: Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 5),

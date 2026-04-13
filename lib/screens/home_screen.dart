@@ -6,6 +6,7 @@ import '../widgets/place_search_bar.dart';
 import '../widgets/daily_forecast_view.dart';
 import '../widgets/hourly_forecast_view.dart';
 import '../widgets/rain_map_view.dart';
+import '../services/rain_tile_service.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -23,6 +24,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    prefetchMalaysiaTiles(nowcastTime()); // warm the rain tile cache at startup
     _forecastTimer = Timer.periodic(const Duration(minutes: 30), (_) {
       final place = ref.read(selectedPlaceProvider);
       if (place != null) ref.invalidate(forecastProvider(place));

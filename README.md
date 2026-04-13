@@ -5,7 +5,7 @@ A Flutter weather app for Malaysia that shows forecasts and live rain radar.
 **Features:**
 - Search any place in Malaysia via Photon (typo-tolerant, covers roads, neighbourhoods & POIs)
 - 7-day daily forecast with expandable cards
-- 48-hour hourly forecast
+- 12-hour hourly forecast
 - Live rain map powered by Tomorrow.io (satellite + model data)
 - Auto-detects current location on startup via GPS
 
