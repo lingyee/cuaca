@@ -108,6 +108,53 @@ flutter run -d emulator-5554   # replace with your actual device ID
 
 > First run downloads Gradle (~200 MB) and compiles the app. This can take 5–15 minutes depending on your connection. Subsequent runs are much faster.
 
+### Run on a physical Android phone
+
+**1. Enable Developer Options on your phone**
+
+- Go to **Settings → About phone**
+- Tap **Build number** 7 times until "You are now a developer" appears
+- Go back to **Settings → Developer options**
+- Enable **USB debugging**
+
+**2. Connect via USB**
+
+Plug your phone into your PC. A prompt will appear on the phone asking to **"Allow USB debugging"** — tap **Allow**.
+
+**3. Verify the device is detected**
+
+```bash
+flutter devices
+```
+
+Your phone should appear, e.g.:
+```
+Pixel 7 (mobile) • R5CT1BXXXXX • android-arm64 • Android 14
+```
+
+**4. Run the app**
+
+```bash
+flutter run -d R5CT1BXXXXX   # replace with your device ID
+```
+
+Or if it's the only connected device:
+
+```bash
+flutter run
+```
+
+> First run compiles the app and may take a few minutes. Subsequent runs are much faster.
+
+**If your phone isn't detected:**
+
+- Try a different USB cable (some are charge-only)
+- On the phone, change the USB mode to **File Transfer / MTP** (not just charging)
+- Install ADB if missing: `sudo apt install adb`
+- Run `adb devices` — if it shows `unauthorized`, re-check the allow prompt on the phone
+
+> When the app first launches, allow the location permission prompt to enable GPS auto-detect.
+
 ### Run on Linux desktop
 
 ```bash
