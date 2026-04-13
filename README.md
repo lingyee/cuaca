@@ -67,18 +67,27 @@ flutter pub get
 
 ### 7. Set up the Tomorrow.io API key
 
-The rain map requires a free Tomorrow.io API key.
+The rain map uses [Tomorrow.io](https://tomorrow.io) for live precipitation tiles. A free API key is required.
 
-1. Sign up at [app.tomorrow.io](https://app.tomorrow.io) (free)
-2. Go to **Development → API Keys** and copy your key
-3. Create the file `lib/config.dart` with your key:
+**Get your API key:**
+
+1. Go to [app.tomorrow.io](https://app.tomorrow.io) and create a free account
+2. After signing in, go to **Development → API Keys** in the left sidebar
+3. Copy the default key (or create a new one)
+
+**Create the config file:**
+
+Create the file `lib/config.dart` in the project root with the following content:
 
 ```dart
+// Get a free API key at https://app.tomorrow.io/development/keys
 const String tomorrowIoApiKey = 'YOUR_API_KEY_HERE';
 ```
 
-> `lib/config.dart` is listed in `.gitignore` and will not be committed.
-> Without this file the app will not compile.
+Replace `YOUR_API_KEY_HERE` with your actual key.
+
+> This file is listed in `.gitignore` and will never be committed to version control.
+> The app will not compile without it.
 
 ### 8. Grant location permissions (Android emulator)
 
