@@ -40,11 +40,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             // Search bar
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              child: PlaceSearchBar(
-                onPlaceSelected: () {
-                  if (_tabIndex == 1) setState(() {}); // refresh map
-                },
-              ),
+              child: const PlaceSearchBar(),
             ),
             // Location subtitle
             if (place != null)

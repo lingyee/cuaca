@@ -4,12 +4,13 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
+import '../models/place.dart';
 import '../providers/weather_provider.dart';
 
 // Malaysia bounding center
 const _malaysiaCentre = LatLng(4.0, 109.5);
 const _malaysiaZoom = 5.0;
-const _placeZoom = 7.0;
+const _placeZoom = 11.0;
 
 class RainMapView extends ConsumerStatefulWidget {
   const RainMapView({super.key});
@@ -48,6 +49,12 @@ class _RainMapViewState extends ConsumerState<RainMapView> {
 
     ref.listen<AsyncValue<String?>>(radarPathProvider, (_, next) {
       next.whenData((_) => setState(() => _lastRefreshed = DateTime.now()));
+    });
+
+    ref.listen<Place?>(selectedPlaceProvider, (_, place) {
+      if (place != null) {
+        mapController.move(place.latLng, _placeZoom);
+      }
     });
 
     final initialCenter = place?.latLng ?? _malaysiaCentre;
@@ -126,33 +133,34 @@ class _RainMapViewState extends ConsumerState<RainMapView> {
               ),
           ],
         ),
-        // Refresh button
+        // Centered refresh pill
         Positioned(
           top: 12,
-          right: 12,
-          child: FloatingActionButton.small(
-            heroTag: 'refresh_radar',
-            onPressed: () => ref.invalidate(radarPathProvider),
-            tooltip: 'Refresh radar',
-            child: const Icon(Icons.refresh),
-          ),
-        ),
-        // Last updated label
-        Positioned(
-          top: 12,
-          left: 12,
-          child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.black54,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              _lastRefreshed == null
-                  ? 'Updating...'
-                  : 'Updated ${DateFormat('d MMM yyyy, HH:mm').format(_lastRefreshed!)}',
-              style: const TextStyle(color: Colors.white, fontSize: 11),
+          left: 0,
+          right: 0,
+          child: Center(
+            child: GestureDetector(
+              onTap: () => ref.invalidate(radarPathProvider),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.refresh, color: Colors.white, size: 14),
+                    const SizedBox(width: 5),
+                    Text(
+                      _lastRefreshed == null
+                          ? 'Updating...'
+                          : 'Updated ${DateFormat('d MMM yyyy, HH:mm').format(_lastRefreshed!)}',
+                      style: const TextStyle(color: Colors.white, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
@@ -166,16 +174,19 @@ class _RainMapViewState extends ConsumerState<RainMapView> {
         if (place == null)
           Positioned(
             top: 52,
-            left: 12,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.black54,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Text(
-                'Search a place to pin location',
-                style: TextStyle(color: Colors.white, fontSize: 13),
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  'Search a place to pin location',
+                  style: TextStyle(color: Colors.white, fontSize: 13),
+                ),
               ),
             ),
           ),
@@ -186,10 +197,10 @@ class _RainMapViewState extends ConsumerState<RainMapView> {
 
 class _RainLegend extends StatelessWidget {
   final List<(Color, String)> _entries = const [
-    (Color(0xFF00D8FF), 'Light'),
-    (Color(0xFF00FF00), 'Moderate'),
-    (Color(0xFFFFFF00), 'Heavy'),
-    (Color(0xFFFF0000), 'Intense'),
+    (Color(0xFF04D6F5), 'Light'),
+    (Color(0xFF00C400), 'Moderate'),
+    (Color(0xFFFFAA00), 'Heavy'),
+    (Color(0xFFCC0000), 'Intense'),
   ];
 
   @override
