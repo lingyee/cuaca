@@ -94,11 +94,14 @@ class _RainMapViewState extends ConsumerState<RainMapView> {
               userAgentPackageName: 'com.cuaca',
             ),
             // Tomorrow.io precipitation overlay
+            // maxNativeZoom=6: rain tiles are fetched at zoom 6 and upscaled,
+            // keeping requests to ~4-6 tiles regardless of how far the user zooms in.
             Opacity(
               opacity: 0.7,
               child: TileLayer(
                 urlTemplate: _precipTileUrl,
                 userAgentPackageName: 'com.cuaca',
+                maxNativeZoom: 6,
               ),
             ),
             // Marker for selected place
