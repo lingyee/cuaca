@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/place.dart';
-import '../services/nominatim_service.dart';
+import '../services/photon_service.dart';
 import '../providers/weather_provider.dart';
 
 class PlaceSearchBar extends ConsumerStatefulWidget {
@@ -17,7 +17,7 @@ class PlaceSearchBar extends ConsumerStatefulWidget {
 class _PlaceSearchBarState extends ConsumerState<PlaceSearchBar> {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
-  final _nominatim = NominatimService();
+  final _nominatim = PhotonService();
   Timer? _debounce;
   List<Place> _suggestions = [];
   bool _loading = false;
@@ -45,7 +45,10 @@ class _PlaceSearchBarState extends ConsumerState<PlaceSearchBar> {
 
   Future<void> _search(String query) async {
     setState(() => _loading = true);
-    final results = await _nominatim.search(query);
+    List<Place> results = [];
+    try {
+      results = await _nominatim.search(query);
+    } catch (_) {}
     if (!mounted) return;
     setState(() {
       _suggestions = results;

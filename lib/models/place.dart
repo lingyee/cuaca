@@ -27,6 +27,31 @@ class Place {
     );
   }
 
+  factory Place.fromPhoton(Map<String, dynamic> feature) {
+    final props = feature['properties'] as Map<String, dynamic>? ?? {};
+    final coords = (feature['geometry']?['coordinates'] as List?) ?? [];
+
+    final name = props['name'] as String? ?? '';
+    final city = props['city'] as String? ?? '';
+    final state = props['state'] as String? ?? '';
+    final street = props['street'] as String? ?? '';
+
+    final shortName = name.isNotEmpty ? name : (city.isNotEmpty ? city : street);
+
+    final parts = [name, street, city, state]
+        .where((s) => s.isNotEmpty)
+        .toSet()
+        .toList();
+    final displayName = parts.isNotEmpty ? parts.join(', ') : shortName;
+
+    return Place(
+      displayName: displayName,
+      shortName: shortName,
+      lat: coords.length >= 2 ? (coords[1] as num).toDouble() : 0.0,
+      lon: coords.length >= 2 ? (coords[0] as num).toDouble() : 0.0,
+    );
+  }
+
   @override
   bool operator ==(Object other) =>
       other is Place && other.lat == lat && other.lon == lon;

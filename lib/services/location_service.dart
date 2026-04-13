@@ -1,9 +1,9 @@
 import 'package:geolocator/geolocator.dart';
 import '../models/place.dart';
-import 'nominatim_service.dart';
+import 'photon_service.dart';
 
 class LocationService {
-  final NominatimService _nominatim = NominatimService();
+  final PhotonService _nominatim = PhotonService();
 
   Future<Place?> getInitialLocation() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
