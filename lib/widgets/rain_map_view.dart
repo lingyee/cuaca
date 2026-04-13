@@ -4,6 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
+import '../config.dart';
 import '../models/place.dart';
 import '../providers/weather_provider.dart';
 
@@ -11,6 +12,20 @@ import '../providers/weather_provider.dart';
 const _malaysiaCentre = LatLng(4.0, 109.5);
 const _malaysiaZoom = 5.0;
 const _placeZoom = 11.0;
+
+/// Returns the current UTC time rounded down to the nearest 5 minutes,
+/// formatted as an ISO 8601 string for the Tomorrow.io tile URL.
+String _nowcastTime() {
+  final now = DateTime.now().toUtc();
+  final rounded = DateTime.utc(
+    now.year,
+    now.month,
+    now.day,
+    now.hour,
+    now.minute - (now.minute % 5),
+  );
+  return '${rounded.toIso8601String().split('.').first}Z';
+}
 
 class RainMapView extends ConsumerStatefulWidget {
   const RainMapView({super.key});
@@ -22,16 +37,17 @@ class RainMapView extends ConsumerStatefulWidget {
 class _RainMapViewState extends ConsumerState<RainMapView> {
   Timer? _timer;
   DateTime? _lastRefreshed;
+  String _tileTime = _nowcastTime();
 
   @override
   void initState() {
     super.initState();
-    // If radar data is already cached, show the time immediately on remount
-    ref.read(radarPathProvider).whenData((_) {
-      _lastRefreshed = DateTime.now();
-    });
+    _lastRefreshed = DateTime.now();
     _timer = Timer.periodic(const Duration(minutes: 10), (_) {
-      ref.invalidate(radarPathProvider);
+      setState(() {
+        _tileTime = _nowcastTime();
+        _lastRefreshed = DateTime.now();
+      });
     });
   }
 
@@ -41,15 +57,15 @@ class _RainMapViewState extends ConsumerState<RainMapView> {
     super.dispose();
   }
 
+  String get _precipTileUrl =>
+      'https://api.tomorrow.io/v4/map/tile/{z}/{x}/{y}'
+      '/precipitationIntensity/$_tileTime.png'
+      '?apikey=$tomorrowIoApiKey';
+
   @override
   Widget build(BuildContext context) {
     final place = ref.watch(selectedPlaceProvider);
-    final radarAsync = ref.watch(radarPathProvider);
     final mapController = ref.watch(mapControllerProvider);
-
-    ref.listen<AsyncValue<String?>>(radarPathProvider, (_, next) {
-      next.whenData((_) => setState(() => _lastRefreshed = DateTime.now()));
-    });
 
     ref.listen<Place?>(selectedPlaceProvider, (_, place) {
       if (place != null) {
@@ -77,22 +93,13 @@ class _RainMapViewState extends ConsumerState<RainMapView> {
               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
               userAgentPackageName: 'com.cuaca',
             ),
-            // RainViewer radar overlay
-            radarAsync.when(
-              data: (path) {
-                if (path == null) return const SizedBox();
-                return Opacity(
-                  opacity: 0.7,
-                  child: TileLayer(
-                    urlTemplate:
-                        'https://tilecache.rainviewer.com$path/256/{z}/{x}/{y}/2/1_1.png',
-                    userAgentPackageName: 'com.cuaca',
-                    maxNativeZoom: 7,
-                  ),
-                );
-              },
-              loading: () => const SizedBox(),
-              error: (error, stack) => const SizedBox(),
+            // Tomorrow.io precipitation overlay
+            Opacity(
+              opacity: 0.7,
+              child: TileLayer(
+                urlTemplate: _precipTileUrl,
+                userAgentPackageName: 'com.cuaca',
+              ),
             ),
             // Marker for selected place
             if (place != null)
@@ -115,8 +122,7 @@ class _RainMapViewState extends ConsumerState<RainMapView> {
                           child: Text(
                             place.shortName,
                             style: TextStyle(
-                              color:
-                                  Theme.of(context).colorScheme.onPrimary,
+                              color: Theme.of(context).colorScheme.onPrimary,
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                             ),
@@ -140,9 +146,13 @@ class _RainMapViewState extends ConsumerState<RainMapView> {
           right: 0,
           child: Center(
             child: GestureDetector(
-              onTap: () => ref.invalidate(radarPathProvider),
+              onTap: () => setState(() {
+                _tileTime = _nowcastTime();
+                _lastRefreshed = DateTime.now();
+              }),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: Colors.black54,
                   borderRadius: BorderRadius.circular(20),
@@ -156,7 +166,8 @@ class _RainMapViewState extends ConsumerState<RainMapView> {
                       _lastRefreshed == null
                           ? 'Updating...'
                           : 'Updated ${DateFormat('d MMM yyyy, HH:mm').format(_lastRefreshed!)}',
-                      style: const TextStyle(color: Colors.white, fontSize: 11),
+                      style:
+                          const TextStyle(color: Colors.white, fontSize: 11),
                     ),
                   ],
                 ),
@@ -178,7 +189,8 @@ class _RainMapViewState extends ConsumerState<RainMapView> {
             right: 0,
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.black54,
                   borderRadius: BorderRadius.circular(8),
@@ -196,11 +208,12 @@ class _RainMapViewState extends ConsumerState<RainMapView> {
 }
 
 class _RainLegend extends StatelessWidget {
+  // Tomorrow.io precipitationIntensity scale (mm/h)
   final List<(Color, String)> _entries = const [
-    (Color(0xFF04D6F5), 'Light'),
-    (Color(0xFF00C400), 'Moderate'),
-    (Color(0xFFFFAA00), 'Heavy'),
-    (Color(0xFFCC0000), 'Intense'),
+    (Color(0xFF00BFFF), '< 0.1 mm/h'),
+    (Color(0xFF00C400), '0.1 – 2 mm/h'),
+    (Color(0xFFFFAA00), '2 – 10 mm/h'),
+    (Color(0xFFCC0000), '> 10 mm/h'),
   ];
 
   @override
@@ -215,7 +228,7 @@ class _RainLegend extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('Rain',
+          const Text('Rain (mm/h)',
               style: TextStyle(
                   color: Colors.white,
                   fontSize: 11,

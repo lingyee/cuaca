@@ -4,8 +4,6 @@ import '../models/place.dart';
 import '../models/forecast.dart';
 import '../services/location_service.dart';
 import '../services/open_meteo_service.dart';
-import '../services/rainviewer_service.dart';
-
 // Selected place (null = no location chosen)
 class SelectedPlaceNotifier extends Notifier<Place?> {
   @override
@@ -25,11 +23,6 @@ final initialPlaceProvider = FutureProvider<Place?>((ref) async {
 // Weather forecast for a given place
 final forecastProvider = FutureProvider.family<Forecast, Place>((ref, place) {
   return OpenMeteoService().getForecast(place);
-});
-
-// Latest RainViewer radar path
-final radarPathProvider = FutureProvider<String?>((ref) {
-  return RainViewerService().getLatestRadarPath();
 });
 
 // Map controller (used to programmatically move the map)
