@@ -20,13 +20,13 @@ class HourlyForecastView extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Text('Next 24 Hours',
+          child: Text('Next 12 Hours',
               style: Theme.of(context).textTheme.titleMedium),
         ),
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemCount: hours.take(24).length,
+            itemCount: hours.take(12).length,
             itemBuilder: (_, i) {
               final h = hours[i];
               final isNow = i == 0;

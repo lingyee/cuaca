@@ -19,104 +19,81 @@ class DailyForecastView extends StatelessWidget {
   }
 }
 
-class _DayCard extends StatefulWidget {
+class _DayCard extends StatelessWidget {
   final DailyForecast day;
   final ColorScheme colorScheme;
 
   const _DayCard({required this.day, required this.colorScheme});
 
   @override
-  State<_DayCard> createState() => _DayCardState();
-}
-
-class _DayCardState extends State<_DayCard> {
-  bool _expanded = false;
-
-  @override
   Widget build(BuildContext context) {
-    final day = widget.day;
     final isToday = DateUtils.isSameDay(day.date, DateTime.now());
     final dayLabel = isToday ? 'Today' : DateFormat('EEE, d MMM').format(day.date);
 
     return Card(
       elevation: 0,
-      color: widget.colorScheme.surfaceContainerLow,
+      color: colorScheme.surfaceContainerLow,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => setState(() => _expanded = !_expanded),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Text(weatherEmoji(day.weatherCode),
-                      style: const TextStyle(fontSize: 28)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(dayLabel,
-                            style: TextStyle(
-                              fontWeight:
-                                  isToday ? FontWeight.bold : FontWeight.normal,
-                              fontSize: 15,
-                            )),
-                        Text(weatherDescription(day.weatherCode),
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: widget.colorScheme.onSurfaceVariant,
-                            )),
-                      ],
-                    ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Text(weatherEmoji(day.weatherCode),
+                    style: const TextStyle(fontSize: 28)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('${day.maxTemp.round()}°C',
-                          style: const TextStyle(
-                              fontSize: 20, fontWeight: FontWeight.bold)),
-                      Text('${day.minTemp.round()}°C',
+                      Text(dayLabel,
                           style: TextStyle(
-                              fontSize: 14,
-                              color: widget.colorScheme.onSurfaceVariant)),
+                            fontWeight:
+                                isToday ? FontWeight.bold : FontWeight.normal,
+                            fontSize: 15,
+                          )),
+                      Text(weatherDescription(day.weatherCode),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: colorScheme.onSurfaceVariant,
+                          )),
                     ],
                   ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    _expanded ? Icons.expand_less : Icons.expand_more,
-                    color: widget.colorScheme.onSurfaceVariant,
-                  ),
-                ],
-              ),
-              // Summary row
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Row(
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    _Chip(Icons.water_drop,
-                        '${day.precipitationProbabilityMax}%',
-                        Colors.blue),
-                    const SizedBox(width: 8),
-                    _Chip(Icons.umbrella,
-                        '${day.precipitationSum.toStringAsFixed(1)} mm',
-                        Colors.blueGrey),
-                    const SizedBox(width: 8),
-                    _Chip(Icons.air, '${day.windSpeedMax.round()} km/h',
-                        Colors.teal),
+                    Text('${day.maxTemp.round()}°C',
+                        style: const TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold)),
+                    Text('${day.minTemp.round()}°C',
+                        style: TextStyle(
+                            fontSize: 14,
+                            color: colorScheme.onSurfaceVariant)),
                   ],
                 ),
-              ),
-              if (_expanded) ...[
-                const Divider(height: 16),
-                _PeriodRow('Morning', '🌅',
-                    'See hourly tab for detailed breakdown',
-                    widget.colorScheme),
               ],
-            ],
-          ),
+            ),
+            // Summary row
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                children: [
+                  _Chip(Icons.water_drop,
+                      '${day.precipitationProbabilityMax}%',
+                      Colors.blue),
+                  const SizedBox(width: 8),
+                  _Chip(Icons.umbrella,
+                      '${day.precipitationSum.toStringAsFixed(1)} mm',
+                      Colors.blueGrey),
+                  const SizedBox(width: 8),
+                  _Chip(Icons.air, '${day.windSpeedMax.round()} km/h',
+                      Colors.teal),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -139,35 +116,6 @@ class _Chip extends StatelessWidget {
         const SizedBox(width: 3),
         Text(label, style: TextStyle(fontSize: 12, color: color)),
       ],
-    );
-  }
-}
-
-class _PeriodRow extends StatelessWidget {
-  final String label;
-  final String emoji;
-  final String text;
-  final ColorScheme colorScheme;
-
-  const _PeriodRow(this.label, this.emoji, this.text, this.colorScheme);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Text(emoji, style: const TextStyle(fontSize: 16)),
-          const SizedBox(width: 8),
-          Text('$label: ',
-              style: const TextStyle(fontWeight: FontWeight.w500)),
-          Expanded(
-            child: Text(text,
-                style: TextStyle(
-                    color: colorScheme.onSurfaceVariant, fontSize: 13)),
-          ),
-        ],
-      ),
     );
   }
 }
