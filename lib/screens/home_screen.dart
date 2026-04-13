@@ -159,7 +159,7 @@ class _ForecastTab extends ConsumerWidget {
           Expanded(
             child: showHourly
                 ? HourlyForecastView(hours: forecast.hourly)
-                : DailyForecastView(days: forecast.daily),
+                : DailyForecastView(days: forecast.daily, hours: forecast.hourly),
           ),
         ],
       ),
