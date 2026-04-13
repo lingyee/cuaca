@@ -75,10 +75,10 @@ class _DayCardState extends State<_DayCard> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text('${day.maxTemp.round()}°',
+                      Text('${day.maxTemp.round()}°C',
                           style: const TextStyle(
                               fontSize: 20, fontWeight: FontWeight.bold)),
-                      Text('${day.minTemp.round()}°',
+                      Text('${day.minTemp.round()}°C',
                           style: TextStyle(
                               fontSize: 14,
                               color: widget.colorScheme.onSurfaceVariant)),

@@ -1,13 +1,15 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 import '../providers/weather_provider.dart';
 
 // Malaysia bounding center
 const _malaysiaCentre = LatLng(4.0, 109.5);
 const _malaysiaZoom = 5.0;
-const _placeZoom = 15.0;
+const _placeZoom = 7.0;
 
 class RainMapView extends ConsumerStatefulWidget {
   const RainMapView({super.key});
@@ -17,11 +19,36 @@ class RainMapView extends ConsumerStatefulWidget {
 }
 
 class _RainMapViewState extends ConsumerState<RainMapView> {
+  Timer? _timer;
+  DateTime? _lastRefreshed;
+
+  @override
+  void initState() {
+    super.initState();
+    // If radar data is already cached, show the time immediately on remount
+    ref.read(radarPathProvider).whenData((_) {
+      _lastRefreshed = DateTime.now();
+    });
+    _timer = Timer.periodic(const Duration(minutes: 10), (_) {
+      ref.invalidate(radarPathProvider);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final place = ref.watch(selectedPlaceProvider);
     final radarAsync = ref.watch(radarPathProvider);
     final mapController = ref.watch(mapControllerProvider);
+
+    ref.listen<AsyncValue<String?>>(radarPathProvider, (_, next) {
+      next.whenData((_) => setState(() => _lastRefreshed = DateTime.now()));
+    });
 
     final initialCenter = place?.latLng ?? _malaysiaCentre;
     final initialZoom = place != null ? _placeZoom : _malaysiaZoom;
@@ -34,7 +61,7 @@ class _RainMapViewState extends ConsumerState<RainMapView> {
             initialCenter: initialCenter,
             initialZoom: initialZoom,
             interactionOptions: const InteractionOptions(
-              flags: InteractiveFlag.all,
+              flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
             ),
           ),
           children: [
@@ -53,6 +80,7 @@ class _RainMapViewState extends ConsumerState<RainMapView> {
                     urlTemplate:
                         'https://tilecache.rainviewer.com$path/256/{z}/{x}/{y}/2/1_1.png',
                     userAgentPackageName: 'com.cuaca',
+                    maxNativeZoom: 7,
                   ),
                 );
               },
@@ -109,6 +137,25 @@ class _RainMapViewState extends ConsumerState<RainMapView> {
             child: const Icon(Icons.refresh),
           ),
         ),
+        // Last updated label
+        Positioned(
+          top: 12,
+          left: 12,
+          child: Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.black54,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              _lastRefreshed == null
+                  ? 'Updating...'
+                  : 'Updated ${DateFormat('d MMM yyyy, HH:mm').format(_lastRefreshed!)}',
+              style: const TextStyle(color: Colors.white, fontSize: 11),
+            ),
+          ),
+        ),
         // Rain legend
         Positioned(
           bottom: 16,
@@ -118,7 +165,7 @@ class _RainMapViewState extends ConsumerState<RainMapView> {
         // No GPS fallback label
         if (place == null)
           Positioned(
-            top: 12,
+            top: 52,
             left: 12,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

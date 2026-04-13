@@ -66,7 +66,7 @@ class _PlaceSearchBarState extends ConsumerState<PlaceSearchBar> {
     ref.read(selectedPlaceProvider.notifier).set(place);
     final mapCtrl = ref.read(mapControllerProvider);
     try {
-      mapCtrl.move(place.latLng, 15.0);
+      mapCtrl.move(place.latLng, 7.0);
     } catch (_) {}
     widget.onPlaceSelected?.call();
   }
@@ -140,6 +140,7 @@ class _PlaceSearchBarState extends ConsumerState<PlaceSearchBar> {
                         _controller.clear();
                         _removeOverlay();
                         setState(() => _suggestions = []);
+                        ref.read(selectedPlaceProvider.notifier).set(null);
                       },
                     )
                   : null,
