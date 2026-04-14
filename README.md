@@ -240,10 +240,12 @@ flutter build apk --release
 The signed APK will be at:
 
 ```
-build/app/outputs/flutter-apk/cuaca-<version>.apk
+build/app/outputs/apk/release/cuaca-<version>.apk
 ```
 
 The version matches the `version` field in `pubspec.yaml` (e.g. `cuaca-1.0.0.apk`).
+
+> Note: Flutter also places a copy at `build/app/outputs/flutter-apk/app-release.apk` — use the path above for the correctly named file.
 
 Transfer it to any Android device. Recipients need **Install unknown apps** enabled (Settings → Apps → Special app access → Install unknown apps).
 
