@@ -285,6 +285,22 @@ Run with `-v` for verbose output to diagnose specific issues.
 
 ---
 
+## Disclaimer
+
+This app is an independent open-source project and is **not affiliated with,
+endorsed by, or sponsored by** any of the data providers it uses:
+
+- Weather data: [Open-Meteo](https://open-meteo.com)
+- Rain map tiles: [Tomorrow.io](https://tomorrow.io)
+- Place search: [Photon / Komoot](https://photon.komoot.io)
+- Base map tiles: [OpenStreetMap](https://www.openstreetmap.org) contributors
+
+Weather and rain data are provided for informational purposes only and may not
+be accurate or up to date. Do not rely on this app for safety-critical
+decisions.
+
+---
+
 ## Dependencies
 
 | Package | Purpose |
