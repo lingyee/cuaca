@@ -4,10 +4,10 @@ A Flutter weather app for Malaysia that shows forecasts and a live rain radar.
 
 **Features:**
 - Search any place in Malaysia via Photon (typo-tolerant, covers roads, neighbourhoods & POIs)
-- Auto-detects current location on startup via GPS
+- Auto-detects current location on startup via GPS; tap **Your Location** in the search dropdown to re-centre on GPS without restarting
 - **Forecast tab** with a Daily / Hourly toggle:
-  - *Daily* — 7-day forecast cards; tap to expand and see Morning / Afternoon / Night breakdowns for each day
-  - *Hourly* — next 12 hours with weather condition, temperature, rain probability, and wind speed
+  - *Daily* — 7-day forecast cards; tap to expand and see Morning / Afternoon / Night breakdowns with weather condition and temperature for each period
+  - *Hourly* — next 12 hours starting from the current hour ("Now"); each card shows weather condition, temperature, rain probability, and wind speed
 - **Rain Map tab** — live precipitation overlay powered by Tomorrow.io; auto-refreshes every 10 minutes; colour-coded Rain Intensity legend (Light → Moderate → Heavy → Intense)
 
 ---

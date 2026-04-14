@@ -95,8 +95,11 @@ class _DayCardState extends State<_DayCard> {
             children: [
               Row(
                 children: [
-                  Text(weatherEmoji(day.weatherCode),
-                      style: const TextStyle(fontSize: 28)),
+                  SizedBox(
+                    width: 40,
+                    child: Text(weatherEmoji(day.weatherCode),
+                        style: const TextStyle(fontSize: 28)),
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -138,7 +141,7 @@ class _DayCardState extends State<_DayCard> {
               ),
               // Summary row
               Padding(
-                padding: const EdgeInsets.only(top: 8),
+                padding: const EdgeInsets.only(top: 8, left: 52),
                 child: Row(
                   children: [
                     _Chip(Icons.water_drop,
@@ -156,13 +159,13 @@ class _DayCardState extends State<_DayCard> {
               ),
               if (_expanded) ...[
                 const Divider(height: 16),
-                for (final (label, emoji, entry, endHour) in [
-                  ('Morning', '🌅', _periodEntry(9), 12),
-                  ('Afternoon', '☀️', _periodEntry(15), 18),
-                  ('Night', '🌙', _nightEntry(), 30), // 30 > any hour, always visible once started
+                for (final (label, entry, endHour) in [
+                  ('Morning', _periodEntry(9), 12),
+                  ('Afternoon', _periodEntry(15), 18),
+                  ('Night', _nightEntry(), 30), // 30 > any hour, always visible once started
                 ])
                   if (entry != null && (!isToday || DateTime.now().hour < endHour))
-                    _PeriodRow(label, emoji, entry, widget.colorScheme),
+                    _PeriodRow(label, entry, widget.colorScheme),
               ],
             ],
           ),
@@ -194,11 +197,10 @@ class _Chip extends StatelessWidget {
 
 class _PeriodRow extends StatelessWidget {
   final String label;
-  final String periodEmoji;
   final HourlyForecast entry;
   final ColorScheme colorScheme;
 
-  const _PeriodRow(this.label, this.periodEmoji, this.entry, this.colorScheme);
+  const _PeriodRow(this.label, this.entry, this.colorScheme);
 
   @override
   Widget build(BuildContext context) {
@@ -206,10 +208,6 @@ class _PeriodRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          SizedBox(
-              width: 24,
-              child: Text(periodEmoji,
-                  style: const TextStyle(fontSize: 16))),
           SizedBox(
               width: 76,
               child: Text(label,

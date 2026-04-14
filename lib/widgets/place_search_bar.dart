@@ -36,11 +36,45 @@ class _PlaceSearchBarState extends ConsumerState<PlaceSearchBar> {
   void _onChanged(String value) {
     _debounce?.cancel();
     if (value.trim().isEmpty) {
-      _removeOverlay();
       setState(() => _suggestions = []);
+      _maybeShowGpsOverlay();
       return;
     }
     _debounce = Timer(const Duration(milliseconds: 400), () => _search(value));
+  }
+
+  void _maybeShowGpsOverlay() {
+    ref.read(initialPlaceProvider).whenData((place) {
+      if (place != null && mounted) _showGpsOverlay(place);
+    });
+  }
+
+  void _showGpsOverlay(Place gpsPlace) {
+    _removeOverlay();
+    final overlay = Overlay.of(context);
+    _overlayEntry = OverlayEntry(
+      builder: (_) => Positioned(
+        width: _layerLink.leaderSize?.width ?? 300,
+        child: CompositedTransformFollower(
+          link: _layerLink,
+          showWhenUnlinked: false,
+          offset: const Offset(0, 56),
+          child: Material(
+            elevation: 4,
+            borderRadius: BorderRadius.circular(8),
+            child: ListTile(
+              leading: const Icon(Icons.my_location, size: 20, color: Colors.blue),
+              title: const Text('Your Location'),
+              subtitle: Text(gpsPlace.displayName,
+                  maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12)),
+              onTap: () => _selectPlace(gpsPlace),
+            ),
+          ),
+        ),
+      ),
+    );
+    overlay.insert(_overlayEntry!);
   }
 
   Future<void> _search(String query) async {
@@ -114,6 +148,11 @@ class _PlaceSearchBarState extends ConsumerState<PlaceSearchBar> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<Place?>(selectedPlaceProvider, (_, place) {
+      if (place != null && _controller.text.isEmpty) {
+        _controller.text = place.shortName;
+      }
+    });
     return CompositedTransformTarget(
       link: _layerLink,
       child: TextField(
@@ -137,9 +176,9 @@ class _PlaceSearchBarState extends ConsumerState<PlaceSearchBar> {
                       icon: const Icon(Icons.clear),
                       onPressed: () {
                         _controller.clear();
-                        _removeOverlay();
                         setState(() => _suggestions = []);
                         ref.read(selectedPlaceProvider.notifier).set(null);
+                        _maybeShowGpsOverlay();
                       },
                     )
                   : null,

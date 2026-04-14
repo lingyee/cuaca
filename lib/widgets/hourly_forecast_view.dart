@@ -14,6 +14,12 @@ class HourlyForecastView extends StatelessWidget {
     }
 
     final colorScheme = Theme.of(context).colorScheme;
+    final now = DateTime.now();
+    final currentHour = DateTime(now.year, now.month, now.day, now.hour);
+    final upcoming = hours
+        .where((h) => !h.time.isBefore(currentHour))
+        .take(12)
+        .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -26,10 +32,9 @@ class HourlyForecastView extends StatelessWidget {
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemCount: hours.take(12).length,
+            itemCount: upcoming.length,
             itemBuilder: (_, i) {
-              final h = hours[i];
-              final now = DateTime.now();
+              final h = upcoming[i];
               final isNow = h.time.year == now.year &&
                   h.time.month == now.month &&
                   h.time.day == now.day &&
@@ -51,7 +56,7 @@ class HourlyForecastView extends StatelessWidget {
                   children: [
                     // Time
                     SizedBox(
-                      width: 48,
+                      width: 44,
                       child: Text(
                         isNow ? 'Now' : DateFormat('HH:mm').format(h.time),
                         style: TextStyle(
@@ -62,14 +67,36 @@ class HourlyForecastView extends StatelessWidget {
                       ),
                     ),
                     // Emoji
-                    Text(weatherEmoji(h.weatherCode),
-                        style: const TextStyle(fontSize: 24)),
-                    const SizedBox(width: 12),
-                    // Description
+                    SizedBox(
+                      width: 32,
+                      child: Text(weatherEmoji(h.weatherCode),
+                          style: const TextStyle(fontSize: 26)),
+                    ),
+                    const SizedBox(width: 8),
+                    // Description + stats
                     Expanded(
-                      child: Text(
-                        weatherDescription(h.weatherCode),
-                        style: TextStyle(fontSize: 13, color: contentColor),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            weatherDescription(h.weatherCode),
+                            style: TextStyle(fontSize: 13, color: contentColor),
+                          ),
+                          const SizedBox(height: 3),
+                          Row(
+                            children: [
+                              Icon(Icons.water_drop, size: 12, color: contentColor),
+                              const SizedBox(width: 2),
+                              Text('${h.precipitationProbability}%',
+                                  style: TextStyle(fontSize: 11, color: contentColor)),
+                              const SizedBox(width: 10),
+                              Icon(Icons.air, size: 12, color: contentColor),
+                              const SizedBox(width: 2),
+                              Text('${h.windSpeed.round()} km/h',
+                                  style: TextStyle(fontSize: 11, color: contentColor)),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                     // Temperature
@@ -79,33 +106,12 @@ class HourlyForecastView extends StatelessWidget {
                         '${h.temperature.round()}°C',
                         textAlign: TextAlign.right,
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 15,
                           fontWeight: FontWeight.bold,
                           color: isNow
                               ? colorScheme.onPrimaryContainer
                               : colorScheme.onSurface,
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Rain
-                    Icon(Icons.water_drop, size: 13, color: contentColor),
-                    const SizedBox(width: 2),
-                    SizedBox(
-                      width: 32,
-                      child: Text(
-                        '${h.precipitationProbability}%',
-                        style: TextStyle(fontSize: 12, color: contentColor),
-                      ),
-                    ),
-                    // Wind
-                    Icon(Icons.air, size: 13, color: contentColor),
-                    const SizedBox(width: 2),
-                    SizedBox(
-                      width: 52,
-                      child: Text(
-                        '${h.windSpeed.round()} km/h',
-                        style: TextStyle(fontSize: 12, color: contentColor),
                       ),
                     ),
                   ],
