@@ -8,7 +8,7 @@ A Flutter weather app for Malaysia that shows forecasts and a live rain radar.
 - **Forecast tab** with a Daily / Hourly toggle:
   - *Daily* — 7-day forecast cards; tap to expand and see Morning / Afternoon / Night breakdowns with weather condition and temperature for each period
   - *Hourly* — next 12 hours starting from the current hour ("Now"); each card shows weather condition, temperature, rain probability, and wind speed
-- **Rain Map tab** — live precipitation overlay powered by Tomorrow.io; defaults to a full-Malaysia view (zoom 4) when no place is pinned, zooms to the selected place when one is set; auto-refreshes every 10 minutes; colour-coded Rain Intensity legend (Light → Moderate → Heavy → Intense)
+- **Rain Map tab** — live precipitation overlay powered by Tomorrow.io; defaults to a full-Malaysia view when no place is pinned, zooms to the selected place when one is set; auto-refreshes every 10 minutes; timeline slider to scrub back through the past 40 minutes in 10-minute steps with smooth cross-fade animation; colour-coded Rain Intensity legend (Light → Moderate → Heavy → Intense)
 
 ## Screenshots
 

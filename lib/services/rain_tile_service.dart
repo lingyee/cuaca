@@ -9,13 +9,11 @@ import '../config.dart';
 // In-memory tile cache: URL → raw PNG bytes
 final _tileCache = <String, Uint8List>{};
 
-// All zoom-4 tiles visible in the Malaysia overview (zoom 4, centre 4°N
-// 109.5°E). Verified to span x=12..13, y=6..9 across all phone screen sizes.
+// Zoom-3 tiles covering all of Malaysia (centre 4°N 109.5°E).
+// 2 tiles vs 8 at zoom 4 — 75% fewer API calls, slight upscale on overlay.
 const _overviewTiles = [
-  (4, 12, 6), (4, 13, 6),
-  (4, 12, 7), (4, 13, 7),
-  (4, 12, 8), (4, 13, 8),
-  (4, 12, 9), (4, 13, 9),
+  (3, 6, 3),
+  (3, 6, 4),
 ];
 
 /// Returns the current UTC time rounded down to the nearest 5 minutes,
@@ -32,11 +30,26 @@ String nowcastTime() {
   return '${rounded.toIso8601String().split('.').first}Z';
 }
 
-/// Converts a lat/lon to the zoom-4 tile (x, y) that contains it.
-(int x, int y) _latLonToTile4(double lat, double lon) {
-  final x = ((lon + 180) / 360 * 16).floor();
+/// Returns the current UTC time rounded down to the nearest 10 minutes,
+/// formatted as an ISO 8601 string for the timeline slider.
+String nowcastTime10() {
+  final now = DateTime.now().toUtc();
+  final rounded = DateTime.utc(
+    now.year,
+    now.month,
+    now.day,
+    now.hour,
+    now.minute - (now.minute % 10),
+  );
+  return '${rounded.toIso8601String().split('.').first}Z';
+}
+
+/// Converts a lat/lon to the zoom-3 tile (x, y) that contains it.
+/// Matches maxNativeZoom: 3 used in the TileLayer overlay.
+(int x, int y) _latLonToTile3(double lat, double lon) {
+  final x = ((lon + 180) / 360 * 8).floor();
   final latRad = lat * math.pi / 180;
-  final y = ((1 - math.log(math.tan(latRad) + 1 / math.cos(latRad)) / math.pi) / 2 * 16).floor();
+  final y = ((1 - math.log(math.tan(latRad) + 1 / math.cos(latRad)) / math.pi) / 2 * 8).floor();
   return (x, y);
 }
 
@@ -66,32 +79,34 @@ Future<void> _saveToDisk(
   } catch (_) {}
 }
 
-/// Deletes all slot subdirectories that don't match [currentTileTime].
-Future<void> _evictOldSlots(String currentTileTime) async {
+/// Deletes slot subdirectories whose names are not in [keepSlots].
+/// Pass the full list of active timeline slots to preserve all cached history.
+Future<void> evictOldSlots(List<String> keepSlots) async {
   try {
     final dir = await getApplicationDocumentsDirectory();
     final parent = Directory('${dir.path}/rain_tiles');
     if (!await parent.exists()) return;
+    final keepSet = keepSlots.toSet();
     await for (final entity in parent.list()) {
       if (entity is Directory &&
-          entity.path.split('/').last != currentTileTime) {
+          !keepSet.contains(entity.path.split('/').last)) {
         await entity.delete(recursive: true);
       }
     }
   } catch (_) {}
 }
 
-/// Pre-fetches zoom-4 rain tiles. Checks memory → disk → network in order.
+/// Pre-fetches zoom-3 rain tiles. Checks memory → disk → network in order.
 ///
-/// If [centre] is provided (GPS/selected place), only the single tile
-/// containing that location is fetched — typically 1 API call.
-/// If [centre] is null (no place pinned), all 8 overview tiles are fetched
-/// to cover the full Malaysia zoom-4 view.
+/// If [centre] is provided (GPS/selected place), only the single zoom-3 tile
+/// containing that location is fetched — 1 API call.
+/// If [centre] is null (no place pinned), the 2 overview tiles covering
+/// all of Malaysia are fetched.
 Future<void> prefetchMalaysiaTiles(String tileTime, {LatLng? centre}) async {
   final List<(int, int, int)> tiles;
   if (centre != null) {
-    final (x, y) = _latLonToTile4(centre.latitude, centre.longitude);
-    tiles = [(4, x, y)];
+    final (x, y) = _latLonToTile3(centre.latitude, centre.longitude);
+    tiles = [(3, x, y)];
   } else {
     tiles = _overviewTiles;
   }
@@ -123,8 +138,6 @@ Future<void> prefetchMalaysiaTiles(String tileTime, {LatLng? centre}) async {
       }
     } catch (_) {}
   }
-  // Fire-and-forget cleanup of old slot directories.
-  _evictOldSlots(tileTime);
 }
 
 /// Returns cached tile bytes for [url], or null if not yet cached.

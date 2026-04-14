@@ -38,8 +38,15 @@ class _RainMapViewState extends ConsumerState<RainMapView>
     with WidgetsBindingObserver {
   Timer? _timer;
   DateTime? _lastRefreshed;
-  String _tileTime = nowcastTime();
   bool _tilesReady = false;
+
+  // Timeline slider state — 5 slots: index 0 = -40m, index 4 = Now
+  int _sliderIndex = 4;  // thumb position + label (updates on drag)
+  int _displayIndex = 4; // drives _tileTime (only updates when tiles ready)
+  List<String> _timeSlots = []; // 5 timestamps, oldest→newest
+  final _loadedSlots = <String>{}; // slots already prefetched
+  bool _isFetchingSlot = false;
+  int _prefetchProgress = 0; // 0–5, how many slots loaded so far
 
   @override
   void initState() {
@@ -63,10 +70,74 @@ class _RainMapViewState extends ConsumerState<RainMapView>
     });
   }
 
+  /// Builds the 5-slot timeline: -40m, -30m, -20m, -10m, now (oldest→newest).
+  List<String> _buildTimeSlots() {
+    final base = DateTime.parse(nowcastTime10());
+    return List.generate(5, (i) {
+      final t = base.subtract(Duration(minutes: (4 - i) * 10));
+      return '${t.toIso8601String().split('.').first}Z';
+    });
+  }
+
   Future<void> _prefetch() async {
+    _timeSlots = _buildTimeSlots();
     final place = ref.read(selectedPlaceProvider);
-    await prefetchMalaysiaTiles(_tileTime, centre: place?.latLng);
-    if (mounted) setState(() => _tilesReady = true);
+
+    // Fetch latest first — show map immediately
+    await prefetchMalaysiaTiles(_timeSlots[4], centre: place?.latLng);
+    if (!mounted) return;
+    _loadedSlots.add(_timeSlots[4]);
+    setState(() {
+      _displayIndex = 4;
+      _tilesReady = true;
+      _prefetchProgress = 1;
+    });
+
+    // Fetch remaining slots newest→oldest in background
+    for (int i = 3; i >= 0; i--) {
+      await prefetchMalaysiaTiles(_timeSlots[i], centre: place?.latLng);
+      if (!mounted) return;
+      _loadedSlots.add(_timeSlots[i]);
+      setState(() => _prefetchProgress = 5 - i); // counts 2→5
+    }
+  }
+
+  /// Fallback fetch for [index] when user drags to a not-yet-loaded slot.
+  Future<void> _fetchSlot(int index) async {
+    final t = _timeSlots[index];
+    if (_loadedSlots.contains(t)) {
+      setState(() {
+        _sliderIndex = index;
+        _displayIndex = index;
+        _tilesReady = true;
+      });
+      return;
+    }
+    setState(() {
+      _sliderIndex = index;
+      _isFetchingSlot = true;
+      _tilesReady = false;
+    });
+    final place = ref.read(selectedPlaceProvider);
+    await prefetchMalaysiaTiles(t, centre: place?.latLng);
+    if (mounted) {
+      _loadedSlots.add(t);
+      setState(() {
+        _displayIndex = index;
+        _isFetchingSlot = false;
+        _tilesReady = true;
+      });
+    }
+  }
+
+  /// Formats a UTC ISO timestamp as local HH:mm.
+  String _slotLabel(int index) {
+    if (_timeSlots.isEmpty) return '';
+    final utc = DateTime.parse(_timeSlots[index]);
+    final local = utc.toLocal();
+    final h = local.hour.toString().padLeft(2, '0');
+    final m = local.minute.toString().padLeft(2, '0');
+    return '$h:$m';
   }
 
   @override
@@ -78,17 +149,34 @@ class _RainMapViewState extends ConsumerState<RainMapView>
 
   void _startTimer() {
     _timer = Timer.periodic(const Duration(minutes: 10), (_) async {
-      final t = nowcastTime();
-      if (mounted) setState(() => _tilesReady = false);
+      final newSlots = _buildTimeSlots();
+      final newLatest = newSlots[6];
       final place = ref.read(selectedPlaceProvider);
-      await prefetchMalaysiaTiles(t, centre: place?.latLng);
-      if (mounted) {
-        setState(() {
-          _tileTime = t;
-          _lastRefreshed = DateTime.now();
-          _tilesReady = true;
-        });
+
+      if (_sliderIndex == 4) {
+        // User is at Now — fetch new latest and update display.
+        if (mounted) setState(() => _tilesReady = false);
+        await prefetchMalaysiaTiles(newLatest, centre: place?.latLng);
+        if (mounted) {
+          _loadedSlots.add(newLatest);
+          _timeSlots = newSlots;
+          setState(() {
+            _sliderIndex = 4;
+            _displayIndex = 4;
+            _lastRefreshed = DateTime.now();
+            _tilesReady = true;
+          });
+        }
+      } else {
+        // User is viewing history — update slot list silently, don't interrupt.
+        if (mounted) {
+          setState(() => _timeSlots = newSlots);
+        }
+        // Background fetch new latest without disrupting current view.
+        prefetchMalaysiaTiles(newLatest, centre: place?.latLng)
+            .then((_) => _loadedSlots.add(newLatest));
       }
+      evictOldSlots(newSlots);
     });
   }
 
@@ -98,23 +186,33 @@ class _RainMapViewState extends ConsumerState<RainMapView>
         state == AppLifecycleState.inactive) {
       _timer?.cancel();
     } else if (state == AppLifecycleState.resumed) {
-      final t = nowcastTime();
-      if (t != _tileTime) {
-        // Slot has advanced — hide stale overlay, fetch new tiles, restore
+      final newSlots = _buildTimeSlots();
+      final newLatest = newSlots[6];
+      final latestChanged = _timeSlots.isEmpty || newLatest != _timeSlots[6];
+      if (latestChanged && _sliderIndex == 4) {
+        // Slot has advanced and user is at Now — hide stale overlay, re-fetch.
         if (mounted) setState(() => _tilesReady = false);
         final place = ref.read(selectedPlaceProvider);
-        await prefetchMalaysiaTiles(t, centre: place?.latLng);
+        await prefetchMalaysiaTiles(newLatest, centre: place?.latLng);
         if (mounted) {
+          _loadedSlots.add(newLatest);
+          _timeSlots = newSlots;
           setState(() {
-            _tileTime = t;
+            _sliderIndex = 4;
+            _displayIndex = 4;
             _lastRefreshed = DateTime.now();
             _tilesReady = true;
           });
         }
+      } else {
+        if (mounted) setState(() => _timeSlots = newSlots);
       }
       _startTimer();
     }
   }
+
+  String get _tileTime =>
+      _timeSlots.length > _displayIndex ? _timeSlots[_displayIndex] : nowcastTime10();
 
   String get _precipTileUrl =>
       'https://api.tomorrow.io/v4/map/tile/{z}/{x}/{y}'
@@ -155,21 +253,27 @@ class _RainMapViewState extends ConsumerState<RainMapView>
               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
               userAgentPackageName: 'com.cuaca',
             ),
-            // Tomorrow.io precipitation overlay — only shown once tiles are
-            // fully cached to prevent NetworkImage fallback / duplicate calls.
-            // maxNativeZoom=4: rain tiles fetched at zoom 4 (2 tiles cover all
-            // of Malaysia), upscaled when zoomed in. Keeps API usage minimal.
-            if (_tilesReady)
-              Opacity(
-                opacity: 0.9,
-                child: TileLayer(
-                  urlTemplate: _precipTileUrl,
-                  userAgentPackageName: 'com.cuaca',
-                  maxNativeZoom: 4,
-                  panBuffer: 0,
-                  tileProvider: _PrefetchedTileProvider(),
-                ),
-              ),
+            // Tomorrow.io precipitation overlay — cross-fades between frames
+            // for smooth slider animation. Keyed by _tileTime so
+            // AnimatedSwitcher detects timestamp changes.
+            // maxNativeZoom=3: 2 zoom-3 tiles cover all Malaysia, upscaled
+            // when zoomed in. Keeps API usage minimal.
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 400),
+              child: _tilesReady
+                  ? Opacity(
+                      key: ValueKey(_tileTime),
+                      opacity: 0.9,
+                      child: TileLayer(
+                        urlTemplate: _precipTileUrl,
+                        userAgentPackageName: 'com.cuaca',
+                        maxNativeZoom: 3,
+                        panBuffer: 0,
+                        tileProvider: _PrefetchedTileProvider(),
+                      ),
+                    )
+                  : const SizedBox.shrink(key: ValueKey('loading')),
+            ),
             // Marker for selected place
             if (place != null)
               MarkerLayer(
@@ -227,6 +331,103 @@ class _RainMapViewState extends ConsumerState<RainMapView>
                     : 'Updated ${DateFormat('d MMM yyyy, HH:mm').format(_lastRefreshed!)}',
                 style: const TextStyle(color: Colors.white, fontSize: 11),
               ),
+            ),
+          ),
+        ),
+        // Timeline slider
+        Positioned(
+          bottom: 16,
+          left: 12,
+          right: 100, // leave room for legend
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.black54,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                // Fixed-width label so slider length never changes
+                SizedBox(
+                  width: 40,
+                  child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _slotLabel(_sliderIndex),
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold),
+                        ),
+                        if (_isFetchingSlot) ...[
+                          const SizedBox(width: 6),
+                          const SizedBox(
+                            width: 10,
+                            height: 10,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 1.5,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (!_isFetchingSlot && _prefetchProgress < 5)
+                      Text(
+                        'Loading $_prefetchProgress/5',
+                        style: const TextStyle(
+                            color: Colors.white60, fontSize: 10),
+                      ),
+                  ],
+                  ), // Column
+                ), // SizedBox
+                const SizedBox(width: 4),
+                Expanded(
+                  child: SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    trackHeight: 2,
+                    thumbShape:
+                        const RoundSliderThumbShape(enabledThumbRadius: 6),
+                    overlayShape:
+                        const RoundSliderOverlayShape(overlayRadius: 12),
+                    activeTrackColor: Colors.white,
+                    inactiveTrackColor: Colors.white38,
+                    thumbColor: Colors.white,
+                    overlayColor: Colors.white24,
+                  ),
+                  child: Slider(
+                    min: 0,
+                    max: 4,
+                    divisions: 4,
+                    value: _sliderIndex.toDouble(),
+                    onChanged: (v) {
+                      final idx = v.round();
+                      setState(() => _sliderIndex = idx);
+                      // Switch display instantly if slot already in memory
+                      if (_timeSlots.isNotEmpty &&
+                          _loadedSlots.contains(_timeSlots[idx])) {
+                        setState(() {
+                          _displayIndex = idx;
+                          _tilesReady = true;
+                        });
+                      }
+                    },
+                    onChangeEnd: (v) {
+                      final idx = v.round();
+                      if (_timeSlots.isNotEmpty &&
+                          !_loadedSlots.contains(_timeSlots[idx])) {
+                        _fetchSlot(idx); // fallback for not-yet-loaded slot
+                      }
+                    },
+                  ),
+                ),
+                ), // Expanded
+              ],
             ),
           ),
         ),
