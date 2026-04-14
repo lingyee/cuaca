@@ -11,7 +11,7 @@ import '../services/rain_tile_service.dart';
 
 // Malaysia bounding center
 const _malaysiaCentre = LatLng(4.0, 109.5);
-const _malaysiaZoom = 6.0;
+const _malaysiaZoom = 4.0;
 const _placeZoom = 11.0;
 
 class _PrefetchedTileProvider extends TileProvider {
@@ -39,13 +39,33 @@ class _RainMapViewState extends ConsumerState<RainMapView>
   Timer? _timer;
   DateTime? _lastRefreshed;
   String _tileTime = nowcastTime();
+  bool _tilesReady = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _lastRefreshed = DateTime.now();
+    _prefetch();
     _startTimer();
+    // The mapController is a persistent singleton, so its last position is
+    // retained across tab switches. Explicitly reset to Malaysia overview when
+    // no place is pinned, so the user always gets the full-country view.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final place = ref.read(selectedPlaceProvider);
+      final ctrl = ref.read(mapControllerProvider);
+      if (place == null) {
+        ctrl.move(_malaysiaCentre, _malaysiaZoom);
+      } else {
+        ctrl.move(place.latLng, _placeZoom);
+      }
+    });
+  }
+
+  Future<void> _prefetch() async {
+    await prefetchMalaysiaTiles(_tileTime);
+    if (mounted) setState(() => _tilesReady = true);
   }
 
   @override
@@ -58,11 +78,13 @@ class _RainMapViewState extends ConsumerState<RainMapView>
   void _startTimer() {
     _timer = Timer.periodic(const Duration(minutes: 10), (_) async {
       final t = nowcastTime();
+      if (mounted) setState(() => _tilesReady = false);
       await prefetchMalaysiaTiles(t);
       if (mounted) {
         setState(() {
           _tileTime = t;
           _lastRefreshed = DateTime.now();
+          _tilesReady = true;
         });
       }
     });
@@ -76,12 +98,14 @@ class _RainMapViewState extends ConsumerState<RainMapView>
     } else if (state == AppLifecycleState.resumed) {
       final t = nowcastTime();
       if (t != _tileTime) {
-        // Slot has advanced — fetch new tiles and update display
+        // Slot has advanced — hide stale overlay, fetch new tiles, restore
+        if (mounted) setState(() => _tilesReady = false);
         await prefetchMalaysiaTiles(t);
         if (mounted) {
           setState(() {
             _tileTime = t;
             _lastRefreshed = DateTime.now();
+            _tilesReady = true;
           });
         }
       }
@@ -102,6 +126,8 @@ class _RainMapViewState extends ConsumerState<RainMapView>
     ref.listen<Place?>(selectedPlaceProvider, (_, place) {
       if (place != null) {
         mapController.move(place.latLng, _placeZoom);
+      } else {
+        mapController.move(_malaysiaCentre, _malaysiaZoom);
       }
     });
 
@@ -126,19 +152,21 @@ class _RainMapViewState extends ConsumerState<RainMapView>
               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
               userAgentPackageName: 'com.cuaca',
             ),
-            // Tomorrow.io precipitation overlay
+            // Tomorrow.io precipitation overlay — only shown once tiles are
+            // fully cached to prevent NetworkImage fallback / duplicate calls.
             // maxNativeZoom=4: rain tiles fetched at zoom 4 (2 tiles cover all
             // of Malaysia), upscaled when zoomed in. Keeps API usage minimal.
-            Opacity(
-              opacity: 0.9,
-              child: TileLayer(
-                urlTemplate: _precipTileUrl,
-                userAgentPackageName: 'com.cuaca',
-                maxNativeZoom: 4,
-                panBuffer: 0,
-                tileProvider: _PrefetchedTileProvider(),
+            if (_tilesReady)
+              Opacity(
+                opacity: 0.9,
+                child: TileLayer(
+                  urlTemplate: _precipTileUrl,
+                  userAgentPackageName: 'com.cuaca',
+                  maxNativeZoom: 4,
+                  panBuffer: 0,
+                  tileProvider: _PrefetchedTileProvider(),
+                ),
               ),
-            ),
             // Marker for selected place
             if (place != null)
               MarkerLayer(
