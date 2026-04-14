@@ -208,6 +208,47 @@ While `flutter run` is active, use these keyboard shortcuts in the terminal:
 
 ---
 
+## Building a release APK
+
+To distribute the app to other Android devices without going through the Play Store.
+
+### 1. Generate a signing keystore (one-time)
+
+```bash
+keytool -genkey -v -keystore ~/cuaca-release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias cuaca
+```
+
+Keep the `.jks` file and the passwords safe — you need them for every future release build.
+
+### 2. Create `android/key.properties`
+
+This file is gitignored and must never be committed.
+
+```
+storePassword=YOUR_KEYSTORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=cuaca
+storeFile=/path/to/cuaca-release.jks
+```
+
+### 3. Build
+
+```bash
+flutter build apk --release
+```
+
+The signed APK will be at:
+
+```
+build/app/outputs/flutter-apk/cuaca-<version>.apk
+```
+
+The version matches the `version` field in `pubspec.yaml` (e.g. `cuaca-1.0.0.apk`).
+
+Transfer it to any Android device. Recipients need **Install unknown apps** enabled (Settings → Apps → Special app access → Install unknown apps).
+
+---
+
 ## Troubleshooting
 
 ### Gradle download stalls or times out
