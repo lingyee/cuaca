@@ -64,7 +64,8 @@ class _RainMapViewState extends ConsumerState<RainMapView>
   }
 
   Future<void> _prefetch() async {
-    await prefetchMalaysiaTiles(_tileTime);
+    final place = ref.read(selectedPlaceProvider);
+    await prefetchMalaysiaTiles(_tileTime, centre: place?.latLng);
     if (mounted) setState(() => _tilesReady = true);
   }
 
@@ -79,7 +80,8 @@ class _RainMapViewState extends ConsumerState<RainMapView>
     _timer = Timer.periodic(const Duration(minutes: 10), (_) async {
       final t = nowcastTime();
       if (mounted) setState(() => _tilesReady = false);
-      await prefetchMalaysiaTiles(t);
+      final place = ref.read(selectedPlaceProvider);
+      await prefetchMalaysiaTiles(t, centre: place?.latLng);
       if (mounted) {
         setState(() {
           _tileTime = t;
@@ -100,7 +102,8 @@ class _RainMapViewState extends ConsumerState<RainMapView>
       if (t != _tileTime) {
         // Slot has advanced — hide stale overlay, fetch new tiles, restore
         if (mounted) setState(() => _tilesReady = false);
-        await prefetchMalaysiaTiles(t);
+        final place = ref.read(selectedPlaceProvider);
+        await prefetchMalaysiaTiles(t, centre: place?.latLng);
         if (mounted) {
           setState(() {
             _tileTime = t;
