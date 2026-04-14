@@ -69,17 +69,22 @@ class _RainMapViewState extends ConsumerState<RainMapView>
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
       _timer?.cancel();
     } else if (state == AppLifecycleState.resumed) {
       final t = nowcastTime();
-      prefetchMalaysiaTiles(t);
-      setState(() {
-        _tileTime = t;
-        _lastRefreshed = DateTime.now();
-      });
+      if (t != _tileTime) {
+        // Slot has advanced — fetch new tiles and update display
+        await prefetchMalaysiaTiles(t);
+        if (mounted) {
+          setState(() {
+            _tileTime = t;
+            _lastRefreshed = DateTime.now();
+          });
+        }
+      }
       _startTimer();
     }
   }

@@ -1,5 +1,8 @@
+import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import '../config.dart';
 
 // In-memory tile cache: URL → raw PNG bytes
@@ -22,13 +25,49 @@ String nowcastTime() {
   return '${rounded.toIso8601String().split('.').first}Z';
 }
 
-/// Pre-fetches the 2 zoom-4 tiles that cover all of Malaysia and stores them
-/// in the in-memory cache. Fire-and-forget: errors are silently swallowed.
+Future<File> _tileFile(String url) async {
+  final dir = await getTemporaryDirectory();
+  final folder = Directory('${dir.path}/rain_tiles');
+  await folder.create(recursive: true);
+  final name = base64Url.encode(utf8.encode(url));
+  return File('${folder.path}/$name');
+}
+
+Future<Uint8List?> _loadFromDisk(String url) async {
+  try {
+    final f = await _tileFile(url);
+    if (await f.exists()) return await f.readAsBytes();
+  } catch (_) {}
+  return null;
+}
+
+Future<void> _saveToDisk(String url, Uint8List bytes) async {
+  try {
+    final f = await _tileFile(url);
+    await f.writeAsBytes(bytes, flush: true);
+  } catch (_) {}
+}
+
+/// Pre-fetches the 2 zoom-4 tiles that cover all of Malaysia.
+/// Checks memory cache → disk cache → network, in that order.
+/// Only hits the network when the tile is not cached anywhere.
 Future<void> prefetchMalaysiaTiles(String tileTime) async {
   for (final (z, x, y) in _malaysiaTiles) {
     final url = 'https://api.tomorrow.io/v4/map/tile/$z/$x/$y'
         '/precipitationIntensity/$tileTime.png'
         '?apikey=$tomorrowIoApiKey';
+
+    // 1. Memory hit — already warm, nothing to do
+    if (_tileCache.containsKey(url)) continue;
+
+    // 2. Disk hit — tile was cached from a previous app session
+    final disk = await _loadFromDisk(url);
+    if (disk != null) {
+      _tileCache[url] = disk;
+      continue;
+    }
+
+    // 3. Network fetch — only reached when data is genuinely new
     try {
       final response = await http.get(
         Uri.parse(url),
@@ -36,6 +75,7 @@ Future<void> prefetchMalaysiaTiles(String tileTime) async {
       );
       if (response.statusCode == 200) {
         _tileCache[url] = response.bodyBytes;
+        await _saveToDisk(url, response.bodyBytes);
       }
     } catch (_) {}
   }
