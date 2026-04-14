@@ -59,7 +59,7 @@ class OpenMeteoService {
     for (int i = 0; i < hourlyTimes.length; i++) {
       final t = DateTime.parse(hourlyTimes[i]);
       if (t.isAfter(now.subtract(const Duration(hours: 1))) &&
-          hourlyList.length < 48) {
+          hourlyList.length < 168) {
         hourlyList.add(HourlyForecast(
           time: t,
           temperature: (hourly['temperature_2m'][i] as num).toDouble(),

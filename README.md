@@ -1,13 +1,14 @@
 # Cuaca
 
-A Flutter weather app for Malaysia that shows forecasts and live rain radar.
+A Flutter weather app for Malaysia that shows forecasts and a live rain radar.
 
 **Features:**
 - Search any place in Malaysia via Photon (typo-tolerant, covers roads, neighbourhoods & POIs)
-- 7-day daily forecast with expandable cards
-- 12-hour hourly forecast
-- Live rain map powered by Tomorrow.io (satellite + model data)
 - Auto-detects current location on startup via GPS
+- **Forecast tab** with a Daily / Hourly toggle:
+  - *Daily* — 7-day forecast cards; tap to expand and see Morning / Afternoon / Night breakdowns for each day
+  - *Hourly* — next 12 hours with weather condition, temperature, rain probability, and wind speed
+- **Rain Map tab** — live precipitation overlay powered by Tomorrow.io; auto-refreshes every 10 minutes; colour-coded Rain Intensity legend (Light → Moderate → Heavy → Intense)
 
 ---
 
@@ -252,11 +253,17 @@ Run with `-v` for verbose output to diagnose specific issues.
 | [intl](https://pub.dev/packages/intl) | Date formatting |
 | [latlong2](https://pub.dev/packages/latlong2) | Lat/lng coordinates |
 
+**Dev dependencies:**
+
+| Package | Purpose |
+|---------|---------|
+| [flutter_launcher_icons](https://pub.dev/packages/flutter_launcher_icons) | Generate Android launcher icons from source image |
+
 **APIs used:**
 
 | API | Purpose | Key required |
 |-----|---------|-------------|
-| [Open-Meteo](https://open-meteo.com) | Weather forecast | No |
+| [Open-Meteo](https://open-meteo.com) | Weather forecast (daily + hourly) | No |
 | [Photon](https://photon.komoot.io) | Place search & reverse geocoding | No |
 | [Tomorrow.io](https://tomorrow.io) | Live rain map tiles (satellite + model) | Yes (free tier) |
 | [OpenStreetMap](https://www.openstreetmap.org) | Base map tiles | No |
