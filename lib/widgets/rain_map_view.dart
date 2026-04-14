@@ -125,7 +125,7 @@ class _RainMapViewState extends ConsumerState<RainMapView>
             // maxNativeZoom=4: rain tiles fetched at zoom 4 (2 tiles cover all
             // of Malaysia), upscaled when zoomed in. Keeps API usage minimal.
             Opacity(
-              opacity: 0.7,
+              opacity: 0.9,
               child: TileLayer(
                 urlTemplate: _precipTileUrl,
                 userAgentPackageName: 'com.cuaca',
@@ -178,36 +178,18 @@ class _RainMapViewState extends ConsumerState<RainMapView>
           left: 0,
           right: 0,
           child: Center(
-            child: GestureDetector(
-              onTap: () {
-                final t = nowcastTime();
-                prefetchMalaysiaTiles(t);
-                setState(() {
-                  _tileTime = t;
-                  _lastRefreshed = DateTime.now();
-                });
-              },
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.refresh, color: Colors.white, size: 14),
-                    const SizedBox(width: 5),
-                    Text(
-                      _lastRefreshed == null
-                          ? 'Updating...'
-                          : 'Updated ${DateFormat('d MMM yyyy, HH:mm').format(_lastRefreshed!)}',
-                      style:
-                          const TextStyle(color: Colors.white, fontSize: 11),
-                    ),
-                  ],
-                ),
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                _lastRefreshed == null
+                    ? 'Updating...'
+                    : 'Updated ${DateFormat('d MMM yyyy, HH:mm').format(_lastRefreshed!)}',
+                style: const TextStyle(color: Colors.white, fontSize: 11),
               ),
             ),
           ),
@@ -245,12 +227,11 @@ class _RainMapViewState extends ConsumerState<RainMapView>
 }
 
 class _RainLegend extends StatelessWidget {
-  // Tomorrow.io precipitationIntensity scale (mm/h)
   final List<(Color, String)> _entries = const [
-    (Color(0xFF00BFFF), '< 0.1 mm/h'),
-    (Color(0xFF00C400), '0.1 – 2 mm/h'),
-    (Color(0xFFFFAA00), '2 – 10 mm/h'),
-    (Color(0xFFCC0000), '> 10 mm/h'),
+    (Color(0xFF00BFFF), 'Light'),
+    (Color(0xFF00C400), 'Moderate'),
+    (Color(0xFFFFAA00), 'Heavy'),
+    (Color(0xFFCC0000), 'Intense'),
   ];
 
   @override
@@ -265,7 +246,7 @@ class _RainLegend extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('Rain (mm/h)',
+          const Text('Rain Intensity',
               style: TextStyle(
                   color: Colors.white,
                   fontSize: 11,
