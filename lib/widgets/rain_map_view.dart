@@ -12,7 +12,7 @@ import '../services/rain_tile_service.dart';
 // Malaysia bounding center
 const _malaysiaCentre = LatLng(4.0, 109.5);
 const _malaysiaZoom = 4.0;
-const _placeZoom = 11.0;
+const _placeZoom = 10.0;
 
 class _PrefetchedTileProvider extends TileProvider {
   @override
@@ -150,7 +150,7 @@ class _RainMapViewState extends ConsumerState<RainMapView>
   void _startTimer() {
     _timer = Timer.periodic(const Duration(minutes: 10), (_) async {
       final newSlots = _buildTimeSlots();
-      final newLatest = newSlots[6];
+      final newLatest = newSlots[4];
       final place = ref.read(selectedPlaceProvider);
 
       if (_sliderIndex == 4) {
@@ -187,8 +187,8 @@ class _RainMapViewState extends ConsumerState<RainMapView>
       _timer?.cancel();
     } else if (state == AppLifecycleState.resumed) {
       final newSlots = _buildTimeSlots();
-      final newLatest = newSlots[6];
-      final latestChanged = _timeSlots.isEmpty || newLatest != _timeSlots[6];
+      final newLatest = newSlots[4];
+      final latestChanged = _timeSlots.isEmpty || newLatest != _timeSlots[4];
       if (latestChanged && _sliderIndex == 4) {
         // Slot has advanced and user is at Now — hide stale overlay, re-fetch.
         if (mounted) setState(() => _tilesReady = false);
@@ -377,12 +377,6 @@ class _RainMapViewState extends ConsumerState<RainMapView>
                         ],
                       ],
                     ),
-                    if (!_isFetchingSlot && _prefetchProgress < 5)
-                      Text(
-                        'Loading $_prefetchProgress/5',
-                        style: const TextStyle(
-                            color: Colors.white60, fontSize: 10),
-                      ),
                   ],
                   ), // Column
                 ), // SizedBox
@@ -466,9 +460,9 @@ class _RainMapViewState extends ConsumerState<RainMapView>
 class _RainLegend extends StatelessWidget {
   final List<(Color, String)> _entries = const [
     (Color(0xFF00BFFF), 'Light'),
-    (Color(0xFF00C400), 'Moderate'),
+    (Color(0xFF00C400), 'Shower'),
     (Color(0xFFFFAA00), 'Heavy'),
-    (Color(0xFFCC0000), 'Intense'),
+    (Color(0xFFCC0000), 'Torrential'),
   ];
 
   @override
